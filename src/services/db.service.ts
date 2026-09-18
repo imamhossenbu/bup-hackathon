@@ -74,6 +74,24 @@ export async function logOptimizationAsync(params: {
   }
 }
 
+export async function getRecentOptimizations(limit = 10): Promise<any[]> {
+  if (!pool) return [];
+  try {
+    await ensureTable();
+    const res = await pool.query(
+      `SELECT id, scenario_id, total_cost_bdt, total_grid_kwh, peak_grid_kwh, execution_time_ms, created_at
+       FROM optimization_logs
+       ORDER BY id DESC
+       LIMIT $1`,
+      [limit]
+    );
+    return res.rows;
+  } catch (error) {
+    console.error('PostgreSQL getRecent error:', error instanceof Error ? error.message : error);
+    return [];
+  }
+}
+
 export async function checkDbHealth(): Promise<boolean> {
   if (!pool) return false;
   try {

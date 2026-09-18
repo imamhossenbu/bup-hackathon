@@ -2,7 +2,7 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getHealth, postOptimizeEnergy } from './controllers/energy.controller.js';
+import { getHealth, postOptimizeEnergy, getHistory } from './controllers/energy.controller.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +17,7 @@ app.use(express.static(publicPath));
 
 app.get('/health', getHealth);
 app.post('/optimize-energy', postOptimizeEnergy);
+app.get('/api/history', getHistory);
 
 app.get('/dashboard', (req: Request, res: Response) => {
   res.sendFile(path.join(publicPath, 'index.html'));
