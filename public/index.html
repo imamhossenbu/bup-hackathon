@@ -273,11 +273,6 @@
       box-shadow: none;
     }
 
-    .btn-success {
-      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
-    }
-
     .kpi-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -410,8 +405,7 @@
 
           <div class="select-wrap">
             <select id="caseSelector">
-              <option value="" disabled selected>-- Select Official / Custom Case --</option>
-              <option value="SAMPLE-01">SAMPLE-01: Solar cleaning + distractor</option>
+              <option value="SAMPLE-01" selected>SAMPLE-01: Solar cleaning + distractor</option>
               <option value="SAMPLE-02">SAMPLE-02: Battery charging maintenance</option>
               <option value="SAMPLE-03">SAMPLE-03: Emergency reserve as percentage</option>
               <option value="SAMPLE-04">SAMPLE-04: No-discharge protection test</option>
@@ -421,9 +415,6 @@
               <option value="SAMPLE-08">SAMPLE-08: Separate charge/discharge outages</option>
               <option value="SAMPLE-09">SAMPLE-09: Reduction wording normalization</option>
               <option value="SAMPLE-10">SAMPLE-10: Multi-constraint evening operation</option>
-              <option value="CUSTOM-01">CUSTOM-01: Paraphrased Solar Reduction</option>
-              <option value="CUSTOM-02">CUSTOM-02: 40% Battery Reserve + Lockout</option>
-              <option value="CUSTOM-03">CUSTOM-03: Transformer Grid Cap</option>
             </select>
           </div>
 
@@ -433,13 +424,52 @@
           </div>
 
           <div id="rawJsonView">
-            <textarea id="scenarioInput"></textarea>
+            <textarea id="scenarioInput">{
+  "scenario_id": "SAMPLE-01",
+  "operator_notes": [
+    "Facilities will wash the rooftop solar panels from noon until 2 PM. During cleaning, usable solar should be treated as roughly 25% of the forecast.",
+    "The sports office moved next month's registration deadline."
+  ],
+  "hours": [
+    { "hour": 0, "demand_kwh": 90, "solar_kwh": 0, "tariff_bdt_per_kwh": 6 },
+    { "hour": 1, "demand_kwh": 85, "solar_kwh": 0, "tariff_bdt_per_kwh": 6 },
+    { "hour": 2, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+    { "hour": 3, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+    { "hour": 4, "demand_kwh": 85, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+    { "hour": 5, "demand_kwh": 95, "solar_kwh": 0, "tariff_bdt_per_kwh": 6 },
+    { "hour": 6, "demand_kwh": 110, "solar_kwh": 5, "tariff_bdt_per_kwh": 8 },
+    { "hour": 7, "demand_kwh": 130, "solar_kwh": 20, "tariff_bdt_per_kwh": 10 },
+    { "hour": 8, "demand_kwh": 150, "solar_kwh": 50, "tariff_bdt_per_kwh": 12 },
+    { "hour": 9, "demand_kwh": 165, "solar_kwh": 90, "tariff_bdt_per_kwh": 14 },
+    { "hour": 10, "demand_kwh": 175, "solar_kwh": 130, "tariff_bdt_per_kwh": 16 },
+    { "hour": 11, "demand_kwh": 180, "solar_kwh": 160, "tariff_bdt_per_kwh": 16 },
+    { "hour": 12, "demand_kwh": 185, "solar_kwh": 180, "tariff_bdt_per_kwh": 15 },
+    { "hour": 13, "demand_kwh": 180, "solar_kwh": 170, "tariff_bdt_per_kwh": 14 },
+    { "hour": 14, "demand_kwh": 170, "solar_kwh": 140, "tariff_bdt_per_kwh": 13 },
+    { "hour": 15, "demand_kwh": 165, "solar_kwh": 90, "tariff_bdt_per_kwh": 14 },
+    { "hour": 16, "demand_kwh": 170, "solar_kwh": 45, "tariff_bdt_per_kwh": 18 },
+    { "hour": 17, "demand_kwh": 185, "solar_kwh": 10, "tariff_bdt_per_kwh": 22 },
+    { "hour": 18, "demand_kwh": 205, "solar_kwh": 0, "tariff_bdt_per_kwh": 28 },
+    { "hour": 19, "demand_kwh": 215, "solar_kwh": 0, "tariff_bdt_per_kwh": 30 },
+    { "hour": 20, "demand_kwh": 205, "solar_kwh": 0, "tariff_bdt_per_kwh": 26 },
+    { "hour": 21, "demand_kwh": 175, "solar_kwh": 0, "tariff_bdt_per_kwh": 18 },
+    { "hour": 22, "demand_kwh": 135, "solar_kwh": 0, "tariff_bdt_per_kwh": 10 },
+    { "hour": 23, "demand_kwh": 105, "solar_kwh": 0, "tariff_bdt_per_kwh": 7 }
+  ],
+  "battery": {
+    "capacity_kwh": 220,
+    "initial_energy_kwh": 110,
+    "minimum_energy_kwh": 40,
+    "max_charge_kwh_per_hour": 50,
+    "max_discharge_kwh_per_hour": 50
+  }
+}</textarea>
           </div>
 
           <div id="formView" style="display: none;">
             <div class="form-group" style="margin-bottom: 0.75rem;">
               <label>Scenario Identifier</label>
-              <input type="text" id="formScenarioId" value="CUSTOM-SCENARIO">
+              <input type="text" id="formScenarioId" value="SAMPLE-01">
             </div>
 
             <div class="form-grid">
@@ -536,8 +566,9 @@
     async function loadSamples() {
       try {
         const res = await fetch('/public_sample_cases.json');
-        samplePackData = await res.json();
-        loadCase('SAMPLE-01');
+        if (res.ok) {
+          samplePackData = await res.json();
+        }
       } catch (err) {
         console.error('Failed to load public samples:', err);
       }
@@ -562,7 +593,7 @@
 
       const list = document.getElementById('notesList');
       list.innerHTML = '';
-      (data.operator_notes || []).forEach((n, idx) => {
+      (data.operator_notes || []).forEach((n) => {
         addNoteRow(n);
       });
     }
@@ -694,11 +725,17 @@
       btn.disabled = true;
 
       try {
+        const textVal = document.getElementById('scenarioInput').value.trim();
+        if (!textVal) {
+          alert('Please enter or select a scenario JSON before running.');
+          return;
+        }
+
         let inputData;
         if (document.getElementById('rawJsonView').style.display !== 'none') {
-          inputData = JSON.parse(document.getElementById('scenarioInput').value);
+          inputData = JSON.parse(textVal);
         } else {
-          inputData = JSON.parse(document.getElementById('scenarioInput').value);
+          inputData = JSON.parse(textVal);
           inputData.scenario_id = document.getElementById('formScenarioId').value;
           inputData.battery.capacity_kwh = Number(document.getElementById('formCapacity').value);
           inputData.battery.initial_energy_kwh = Number(document.getElementById('formInitial').value);
@@ -773,6 +810,9 @@
 
     loadSamples();
     fetchHistory();
+    try {
+      syncJsonToForm(JSON.parse(document.getElementById('scenarioInput').value));
+    } catch {}
   </script>
 </body>
 </html>

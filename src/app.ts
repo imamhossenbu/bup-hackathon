@@ -19,6 +19,11 @@ app.get('/health', getHealth);
 app.post('/optimize-energy', postOptimizeEnergy);
 app.get('/api/history', getHistory);
 
+app.get('/public_sample_cases.json', (req: Request, res: Response) => {
+  const rootPath = path.join(__dirname, '../public_sample_cases.json');
+  res.sendFile(rootPath);
+});
+
 app.get('/dashboard', (req: Request, res: Response) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
