@@ -14,16 +14,21 @@ export interface OptimizationResult {
   effective_solar: number[];
 }
 
+function cleanNonNegative(val: number, decimals = 2): number {
+  const rounded = Number(Math.max(0, val).toFixed(decimals));
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
 export function solveEnergySchedule(
   input: ScenarioInput,
   directives: DirectiveInterpretation[]
 ): OptimizationResult {
   const { hours, battery } = input;
 
-  const effectiveSolar: number[] = hours.map(h => h.solar_kwh);
-  const minEnergyReserve: number[] = hours.map(() => battery.minimum_energy_kwh);
-  const maxChargeLimit: number[] = hours.map(() => battery.max_charge_kwh_per_hour);
-  const maxDischargeLimit: number[] = hours.map(() => battery.max_discharge_kwh_per_hour);
+  const effectiveSolar: number[] = hours.map(h => cleanNonNegative(h.solar_kwh, 4));
+  const minEnergyReserve: number[] = hours.map(() => cleanNonNegative(battery.minimum_energy_kwh));
+  const maxChargeLimit: number[] = hours.map(() => cleanNonNegative(battery.max_charge_kwh_per_hour));
+  const maxDischargeLimit: number[] = hours.map(() => cleanNonNegative(battery.max_discharge_kwh_per_hour));
   const maxGridLimit: number[] = hours.map(() => 9999999);
 
   for (const dir of directives) {
@@ -33,14 +38,14 @@ export function solveEnergySchedule(
       const adj = dir.structured_adjustment as { hours: number[]; factor: number };
       for (const h of adj.hours) {
         if (h >= 0 && h < 24) {
-          effectiveSolar[h] = Number((hours[h].solar_kwh * adj.factor).toFixed(4));
+          effectiveSolar[h] = cleanNonNegative(hours[h].solar_kwh * adj.factor, 4);
         }
       }
     } else if (dir.directive_type === 'minimum_battery_reserve') {
       const adj = dir.structured_adjustment as { hours: number[]; minimum_energy_kwh: number };
       for (const h of adj.hours) {
         if (h >= 0 && h < 24) {
-          minEnergyReserve[h] = Math.max(minEnergyReserve[h], adj.minimum_energy_kwh);
+          minEnergyReserve[h] = Math.max(minEnergyReserve[h], cleanNonNegative(adj.minimum_energy_kwh));
         }
       }
     } else if (dir.directive_type === 'no_charge_window') {
@@ -61,7 +66,7 @@ export function solveEnergySchedule(
       const adj = dir.structured_adjustment as { hours: number[]; max_grid_kwh: number };
       for (const h of adj.hours) {
         if (h >= 0 && h < 24) {
-          maxGridLimit[h] = Math.min(maxGridLimit[h], adj.max_grid_kwh);
+          maxGridLimit[h] = Math.min(maxGridLimit[h], cleanNonNegative(adj.max_grid_kwh));
         }
       }
     }
@@ -75,8 +80,8 @@ export function solveEnergySchedule(
   };
 
   for (let h = 0; h < 24; h++) {
-    const demand = hours[h].demand_kwh;
-    const tariff = hours[h].tariff_bdt_per_kwh;
+    const demand = cleanNonNegative(hours[h].demand_kwh);
+    const tariff = cleanNonNegative(hours[h].tariff_bdt_per_kwh);
     const solarMax = effectiveSolar[h];
     const cMax = maxChargeLimit[h];
     const dMax = maxDischargeLimit[h];
@@ -143,25 +148,25 @@ export function solveEnergySchedule(
   const lpSolution = solver.Solve(model);
 
   const hourlyPlan: HourlyPlanEntry[] = [];
-  let runningEnergy = battery.initial_energy_kwh;
+  let runningEnergy = cleanNonNegative(battery.initial_energy_kwh);
 
   for (let h = 0; h < 24; h++) {
-    const rawSolar = Number(lpSolution[`solar_${h}`] || 0);
-    const rawCharge = Number(lpSolution[`charge_${h}`] || 0);
-    const rawDischarge = Number(lpSolution[`discharge_${h}`] || 0);
+    const rawSolar = cleanNonNegative(Number(lpSolution[`solar_${h}`] || 0));
+    const rawCharge = cleanNonNegative(Number(lpSolution[`charge_${h}`] || 0));
+    const rawDischarge = cleanNonNegative(Number(lpSolution[`discharge_${h}`] || 0));
 
     let solarUsed = Math.min(rawSolar, effectiveSolar[h]);
-    solarUsed = Math.max(0, Number(solarUsed.toFixed(2)));
+    solarUsed = cleanNonNegative(solarUsed);
 
     let action: BatteryAction = 'idle';
     let bKwh = 0;
 
     if (rawCharge > 0.01 && rawCharge >= rawDischarge) {
       action = 'charge';
-      bKwh = Number(rawCharge.toFixed(2));
+      bKwh = cleanNonNegative(rawCharge);
     } else if (rawDischarge > 0.01 && rawDischarge > rawCharge) {
       action = 'discharge';
-      bKwh = Number(rawDischarge.toFixed(2));
+      bKwh = cleanNonNegative(rawDischarge);
     }
 
     if (action === 'charge') {
@@ -170,12 +175,12 @@ export function solveEnergySchedule(
       runningEnergy -= bKwh;
     }
     runningEnergy = Math.max(battery.minimum_energy_kwh, Math.min(battery.capacity_kwh, runningEnergy));
-    runningEnergy = Number(runningEnergy.toFixed(2));
+    runningEnergy = cleanNonNegative(runningEnergy);
 
     const netBatteryDischarge = action === 'discharge' ? bKwh : 0;
     const netBatteryCharge = action === 'charge' ? bKwh : 0;
     let gridKwh = hours[h].demand_kwh + netBatteryCharge - solarUsed - netBatteryDischarge;
-    gridKwh = Math.max(0, Number(gridKwh.toFixed(2)));
+    gridKwh = cleanNonNegative(gridKwh);
 
     hourlyPlan.push({
       hour: h,
@@ -188,7 +193,7 @@ export function solveEnergySchedule(
   }
 
   if (Math.abs(hourlyPlan[23].battery_energy_after_kwh - battery.initial_energy_kwh) > 0.05) {
-    hourlyPlan[23].battery_energy_after_kwh = battery.initial_energy_kwh;
+    hourlyPlan[23].battery_energy_after_kwh = cleanNonNegative(battery.initial_energy_kwh);
   }
 
   let totalGridKwh = 0;
@@ -206,9 +211,9 @@ export function solveEnergySchedule(
 
   return {
     hourly_plan: hourlyPlan,
-    total_grid_kwh: Number(totalGridKwh.toFixed(2)),
-    total_cost_bdt: Number(totalCostBdt.toFixed(2)),
-    peak_grid_kwh: Number(peakGridKwh.toFixed(2)),
+    total_grid_kwh: cleanNonNegative(totalGridKwh),
+    total_cost_bdt: cleanNonNegative(totalCostBdt),
+    peak_grid_kwh: cleanNonNegative(peakGridKwh),
     effective_solar: effectiveSolar
   };
 }

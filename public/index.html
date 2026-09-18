@@ -132,10 +132,38 @@
     }
 
     .select-wrap {
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
       display: flex;
       gap: 0.5rem;
       align-items: center;
+    }
+
+    .upload-zone {
+      border: 2px dashed rgba(99, 102, 241, 0.35);
+      background: rgba(99, 102, 241, 0.05);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.12);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .upload-zone p {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      margin-top: 0.25rem;
+    }
+
+    .upload-zone span {
+      font-size: 0.78rem;
+      color: var(--text-muted);
     }
 
     select, input[type="text"], input[type="number"] {
@@ -186,7 +214,7 @@
 
     textarea {
       width: 100%;
-      height: 250px;
+      height: 230px;
       background: rgba(10, 15, 29, 0.85);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 0.65rem;
@@ -375,6 +403,10 @@
       text-transform: uppercase;
       font-size: 0.75rem;
     }
+
+    .file-input-hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -400,8 +432,15 @@
         <div class="card">
           <h2>
             <span>Scenario Input & Directives</span>
-            <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">Quick-Load or Customize</span>
+            <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">Upload or Select</span>
           </h2>
+
+          <div class="upload-zone" id="dropZone">
+            <input type="file" id="fileInput" class="file-input-hidden" accept=".json">
+            <div style="font-size: 1.5rem;">📁</div>
+            <p><strong>Click to Upload or Drag & Drop Scenario JSON</strong></p>
+            <span>Supports standard 24h campus scenario JSON files</span>
+          </div>
 
           <div class="select-wrap">
             <select id="caseSelector">
@@ -609,6 +648,48 @@
       `;
       row.querySelector('.btn-del').addEventListener('click', () => row.remove());
       list.appendChild(row);
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleJsonFile(file);
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleJsonFile(file);
+    });
+
+    function handleJsonFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const inputData = parsed.input || parsed;
+          document.getElementById('scenarioInput').value = JSON.stringify(inputData, null, 2);
+          syncJsonToForm(inputData);
+          alert(`Successfully loaded: ${file.name}`);
+        } catch (err) {
+          alert('Invalid JSON file. Please ensure the file contains valid JSON.');
+        }
+      };
+      reader.readAsText(file);
     }
 
     document.getElementById('addNoteBtn').addEventListener('click', () => addNoteRow(''));

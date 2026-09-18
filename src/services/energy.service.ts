@@ -10,23 +10,41 @@ import { auditSchedule } from './auditor.service.js';
 import { logOptimizationAsync } from './db.service.js';
 
 export const ScenarioInputSchema = z.object({
-  scenario_id: z.string().min(1),
-  operator_notes: z.array(z.string().min(1)).min(1).max(3),
-  hours: z.array(
-    z.object({
-      hour: z.number().int().min(0).max(23),
-      demand_kwh: z.number().min(0),
-      solar_kwh: z.number().min(0),
-      tariff_bdt_per_kwh: z.number().min(0)
+  scenario_id: z.string().trim().min(1, 'scenario_id cannot be empty'),
+  operator_notes: z
+    .array(z.string().trim().min(1, 'note cannot be empty'))
+    .min(1, 'operator_notes must contain between 1 and 3 notes')
+    .max(3, 'operator_notes cannot contain more than 3 notes'),
+  hours: z
+    .array(
+      z.object({
+        hour: z.number().int().min(0).max(23),
+        demand_kwh: z.number().finite().min(0, 'demand_kwh cannot be negative'),
+        solar_kwh: z.number().finite().min(0, 'solar_kwh cannot be negative'),
+        tariff_bdt_per_kwh: z.number().finite().min(0, 'tariff_bdt_per_kwh cannot be negative')
+      })
+    )
+    .length(24, 'hours array must contain exactly 24 entries')
+    .refine((hours) => {
+      const hourSet = new Set(hours.map((h) => h.hour));
+      return hourSet.size === 24 && hours.every((h, i) => h.hour >= 0 && h.hour <= 23);
+    }, 'hours must contain unique integer entries for hours 0 through 23'),
+  battery: z
+    .object({
+      capacity_kwh: z.number().finite().positive('capacity_kwh must be greater than 0'),
+      initial_energy_kwh: z.number().finite().min(0, 'initial_energy_kwh cannot be negative'),
+      minimum_energy_kwh: z.number().finite().min(0, 'minimum_energy_kwh cannot be negative'),
+      max_charge_kwh_per_hour: z.number().finite().positive('max_charge_kwh_per_hour must be greater than 0'),
+      max_discharge_kwh_per_hour: z.number().finite().positive('max_discharge_kwh_per_hour must be greater than 0')
     })
-  ).length(24),
-  battery: z.object({
-    capacity_kwh: z.number().positive(),
-    initial_energy_kwh: z.number().min(0),
-    minimum_energy_kwh: z.number().min(0),
-    max_charge_kwh_per_hour: z.number().positive(),
-    max_discharge_kwh_per_hour: z.number().positive()
-  })
+    .refine(
+      (b) => b.initial_energy_kwh <= b.capacity_kwh,
+      'initial_energy_kwh cannot exceed capacity_kwh'
+    )
+    .refine(
+      (b) => b.minimum_energy_kwh <= b.capacity_kwh,
+      'minimum_energy_kwh cannot exceed capacity_kwh'
+    )
 });
 
 function generatePlanSummary(

@@ -10,6 +10,7 @@
     "dev": "tsx watch src/server.ts",
     "test:samples": "tsx test/validate-samples.ts",
     "test:custom": "tsx test/custom-cases.ts",
+    "test:validation": "tsx test/test-validation.ts",
     "check:api": "tsx test/verify-http-api.ts"
   },
   "dependencies": {
