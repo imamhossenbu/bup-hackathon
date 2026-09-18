@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GridWise — Smart Campus Energy Optimizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: rgba(18, 26, 43, 0.75);
+      --card-border: rgba(99, 102, 241, 0.18);
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.4);
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --cyan: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .logo-area h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 30%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--emerald);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      background-color: var(--emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--emerald);
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .card h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    textarea {
+      width: 100%;
+      height: 280px;
+      background: rgba(10, 15, 29, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.65rem;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 1rem;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    button {
+      flex: 1;
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      color: white;
+      border: none;
+      padding: 0.85rem 1.25rem;
+      border-radius: 0.65rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: none;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .kpi-box {
+      background: rgba(10, 15, 29, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .kpi-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+
+    .kpi-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .directive-card {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 4px solid var(--accent);
+      border-radius: 0.5rem;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .directive-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.4rem;
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .directive-text {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      margin-bottom: 0.35rem;
+    }
+
+    .directive-json {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: #38bdf8;
+    }
+
+    .chart-box {
+      margin-top: 1.5rem;
+      height: 320px;
+    }
+
+    .summary-box {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #e2e8f0;
+      margin-top: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-area">
+        <h1>BUP Smart Campus — GridWise Engine</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">LLM Operator Interpretation & Mathematical LP Energy Scheduler</p>
+      </div>
+      <div class="badge-pill">
+        <span class="pulse"></span>
+        <span>ENGINE READY (/health 200)</span>
+      </div>
+    </header>
+
+    <div class="grid-layout">
+      <div class="card">
+        <h2>Input Scenario & Operator Directives</h2>
+        <textarea id="scenarioInput"></textarea>
+        <div class="btn-row">
+          <button id="runBtn">Optimize Energy Plan</button>
+          <button id="sampleBtn" class="btn-secondary">Load Sample 01</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Optimization Telemetry & Directives</h2>
+        <div class="kpi-row">
+          <div class="kpi-box">
+            <div class="kpi-title">Total Grid Cost</div>
+            <div class="kpi-val" id="kpiCost">-- BDT</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Total Grid Import</div>
+            <div class="kpi-val" id="kpiGrid">-- kWh</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Peak Grid Load</div>
+            <div class="kpi-val" id="kpiPeak">-- kWh</div>
+          </div>
+        </div>
+
+        <div id="directivesArea">
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Run optimization to view parsed directives and audit validation.</p>
+        </div>
+
+        <div id="summaryArea" class="summary-box" style="display:none;"></div>
+
+        <div class="chart-box">
+          <canvas id="energyChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sampleScenario = {
+      "scenario_id": "SAMPLE-01",
+      "operator_notes": [
+        "Facilities will wash the rooftop solar panels from noon until 2 PM. During cleaning, usable solar should be treated as roughly 25% of the forecast.",
+        "The sports office moved next month's registration deadline."
+      ],
+      "hours": [
+        {"hour": 0, "demand_kwh": 90, "solar_kwh": 0, "tariff_bdt_per_kwh": 6},
+        {"hour": 1, "demand_kwh": 85, "solar_kwh": 0, "tariff_bdt_per_kwh": 6},
+        {"hour": 2, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5},
+        {"hour": 3, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5},
+        {"hour": 4, "demand_kwh": 85, "solar_kwh": 0, "tariff_bdt_per_kwh": 5},
+        {"hour": 5, "demand_kwh": 95, "solar_kwh": 0, "tariff_bdt_per_kwh": 6},
+        {"hour": 6, "demand_kwh": 110, "solar_kwh": 5, "tariff_bdt_per_kwh": 8},
+        {"hour": 7, "demand_kwh": 130, "solar_kwh": 20, "tariff_bdt_per_kwh": 10},
+        {"hour": 8, "demand_kwh": 150, "solar_kwh": 50, "tariff_bdt_per_kwh": 12},
+        {"hour": 9, "demand_kwh": 165, "solar_kwh": 90, "tariff_bdt_per_kwh": 14},
+        {"hour": 10, "demand_kwh": 175, "solar_kwh": 130, "tariff_bdt_per_kwh": 16},
+        {"hour": 11, "demand_kwh": 180, "solar_kwh": 160, "tariff_bdt_per_kwh": 16},
+        {"hour": 12, "demand_kwh": 185, "solar_kwh": 180, "tariff_bdt_per_kwh": 15},
+        {"hour": 13, "demand_kwh": 180, "solar_kwh": 170, "tariff_bdt_per_kwh": 14},
+        {"hour": 14, "demand_kwh": 170, "solar_kwh": 140, "tariff_bdt_per_kwh": 13},
+        {"hour": 15, "demand_kwh": 165, "solar_kwh": 90, "tariff_bdt_per_kwh": 14},
+        {"hour": 16, "demand_kwh": 170, "solar_kwh": 45, "tariff_bdt_per_kwh": 18},
+        {"hour": 17, "demand_kwh": 185, "solar_kwh": 10, "tariff_bdt_per_kwh": 22},
+        {"hour": 18, "demand_kwh": 205, "solar_kwh": 0, "tariff_bdt_per_kwh": 28},
+        {"hour": 19, "demand_kwh": 215, "solar_kwh": 0, "tariff_bdt_per_kwh": 30},
+        {"hour": 20, "demand_kwh": 205, "solar_kwh": 0, "tariff_bdt_per_kwh": 26},
+        {"hour": 21, "demand_kwh": 175, "solar_kwh": 0, "tariff_bdt_per_kwh": 18},
+        {"hour": 22, "demand_kwh": 135, "solar_kwh": 0, "tariff_bdt_per_kwh": 10},
+        {"hour": 23, "demand_kwh": 105, "solar_kwh": 0, "tariff_bdt_per_kwh": 7}
+      ],
+      "battery": {
+        "capacity_kwh": 220,
+        "initial_energy_kwh": 110,
+        "minimum_energy_kwh": 40,
+        "max_charge_kwh_per_hour": 50,
+        "max_discharge_kwh_per_hour": 50
+      }
+    };
+
+    document.getElementById('scenarioInput').value = JSON.stringify(sampleScenario, null, 2);
+
+    let chartInstance = null;
+
+    function renderChart(plan, originalHours) {
+      const ctx = document.getElementById('energyChart').getContext('2d');
+      const labels = plan.map(p => `${p.hour}:00`);
+
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Demand (kWh)',
+              data: originalHours.map(h => h.demand_kwh),
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.1)',
+              borderWidth: 2,
+              tension: 0.3
+            },
+            {
+              label: 'Grid Import (kWh)',
+              data: plan.map(p => p.grid_kwh),
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              borderWidth: 2,
+              tension: 0.3
+            },
+            {
+              label: 'Solar Used (kWh)',
+              data: plan.map(p => p.solar_used_kwh),
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2,
+              tension: 0.3
+            },
+            {
+              label: 'Battery SOC (kWh)',
+              data: plan.map(p => p.battery_energy_after_kwh),
+              borderColor: '#f59e0b',
+              borderDash: [5, 5],
+              borderWidth: 2,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { grid: { color: 'rgba(255, 255, 255, 0.06)' } },
+            x: { grid: { color: 'rgba(255, 255, 255, 0.06)' } }
+          },
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    document.getElementById('sampleBtn').addEventListener('click', () => {
+      document.getElementById('scenarioInput').value = JSON.stringify(sampleScenario, null, 2);
+    });
+
+    document.getElementById('runBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('runBtn');
+      btn.innerText = 'Solving...';
+      btn.disabled = true;
+
+      try {
+        const inputData = JSON.parse(document.getElementById('scenarioInput').value);
+        const res = await fetch('/optimize-energy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(inputData)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Optimization failed');
+
+        document.getElementById('kpiCost').innerText = `${Number(data.total_cost_bdt).toLocaleString()} BDT`;
+        document.getElementById('kpiGrid').innerText = `${Number(data.total_grid_kwh).toLocaleString()} kWh`;
+        document.getElementById('kpiPeak').innerText = `${Number(data.peak_grid_kwh).toLocaleString()} kWh`;
+
+        const directivesArea = document.getElementById('directivesArea');
+        directivesArea.innerHTML = data.directive_interpretation.map(d => `
+          <div class="directive-card">
+            <span class="directive-tag">${d.directive_type}</span>
+            <div class="directive-text"><strong>Applies:</strong> ${d.applies} — ${d.explanation}</div>
+            <div class="directive-json">${d.structured_adjustment ? JSON.stringify(d.structured_adjustment) : 'null'}</div>
+          </div>
+        `).join('');
+
+        const summaryArea = document.getElementById('summaryArea');
+        summaryArea.style.display = 'block';
+        summaryArea.innerText = data.plan_summary;
+
+        renderChart(data.hourly_plan, inputData.hours);
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      } finally {
+        btn.innerText = 'Optimize Energy Plan';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
