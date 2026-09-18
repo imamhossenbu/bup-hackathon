@@ -1,5 +1,5 @@
-import Groq from 'groq-sdk';
-import OpenAI from 'openai';
+import { Groq } from 'groq-sdk';
+import { OpenAI } from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import { BatteryConfig, DirectiveInterpretation } from '../types/energy.js';

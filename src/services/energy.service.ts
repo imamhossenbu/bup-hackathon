@@ -27,7 +27,7 @@ export const ScenarioInputSchema = z.object({
     .length(24, 'hours array must contain exactly 24 entries')
     .refine((hours) => {
       const hourSet = new Set(hours.map((h) => h.hour));
-      return hourSet.size === 24 && hours.every((h, i) => h.hour >= 0 && h.hour <= 23);
+      return hourSet.size === 24 && hours.every((h) => h.hour >= 0 && h.hour <= 23);
     }, 'hours must contain unique integer entries for hours 0 through 23'),
   battery: z
     .object({
@@ -75,7 +75,12 @@ export async function processEnergyOptimization(
 ): Promise<OptimizeEnergyResponse> {
   const startTime = Date.now();
 
-  const validatedInput: ScenarioInput = ScenarioInputSchema.parse(rawInput);
+  const payloadToValidate =
+    rawInput && typeof rawInput === 'object' && rawInput.input && typeof rawInput.input === 'object'
+      ? rawInput.input
+      : rawInput;
+
+  const validatedInput: ScenarioInput = ScenarioInputSchema.parse(payloadToValidate);
 
   const directives = await interpretOperatorNotes(
     validatedInput.operator_notes,
