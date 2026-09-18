@@ -8,7 +8,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "test:samples": "tsx test/validate-samples.ts"
+    "test:samples": "tsx test/validate-samples.ts",
+    "test:custom": "tsx test/custom-cases.ts",
+    "check:api": "tsx test/verify-http-api.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
